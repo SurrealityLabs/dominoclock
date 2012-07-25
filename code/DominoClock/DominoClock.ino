@@ -92,7 +92,7 @@ int setDateFunc(char * args[], char num_args) {
   setTime.setMonth(monthNum);
   setTime.setDay(dayNum);
   RTC.adjust(setTime);
-
+  
   Serial.print(F("Setting date to "));
   Serial.print(dayNum);
   Serial.print('/');
@@ -132,7 +132,7 @@ int setTimeFunc(char * args[], char num_args) {
   setTime.setMinute(minNum);
   setTime.setSecond(secNum);
   RTC.adjust(setTime);
-
+  
   Serial.print(F("Setting time to "));
   Serial.print(hourNum);
   Serial.print(F(":"));
@@ -179,6 +179,7 @@ void setup() {
     pinMode(2, OUTPUT);
     pinMode(3, OUTPUT);
     pinMode(4, OUTPUT);
+    pinMode(8, OUTPUT);
     
     // Clear the display
     FastShiftOut(0);
@@ -187,29 +188,33 @@ void setup() {
     FastShiftOut(0);
     FastShiftOut(0);
     FastShiftOut(0);
-    analogWrite(5, 0);
+    digitalWrite(3, HIGH);
+    delay(1);
+    digitalWrite(3, LOW);
+    digitalWrite(8, LOW);
 }
 
 void loop() {
-    static uint8_t runFlag = 0;
+    static uint8_t runFlag = 1, firstRun = 1;
     static uint8_t hours1 = 0, hours2 = 0, tenmin1 = 0, tenmin2 = 0, min1 = 0, min2 = 0;
     uint8_t i, j, k;
     DateTime now = RTC.now();
     CommandLine.runService();
     
-    if((runFlag == 0) || (now.second() == 0)) {
-        runFlag = 1;
+    if((firstRun == 1) || ((runFlag == 1) && (now.second() == 0))) {
+        runFlag = 0;
+        firstRun = 0;
         // figure out display
         
         // start with 12 hours
         i = now.hour() % 12;
         if(i == 0) i = 12;
-        
+      
         if(i <= 6) {
-            j = random(0, i);
+            j = random(0, i + 1);
             k = i - j;
         } else {
-            j = random(6 - i, 6);
+            j = random(i - 6, 7);
             k = i - j; 
         }
         
@@ -220,10 +225,10 @@ void loop() {
         i = now.minute() / 10;
         
         if(i <= 6) {
-            j = random(0, i);
+            j = random(0, i + 1);
             k = i - j;
         } else {
-            j = random(6 - i, 6);
+            j = random(i - 6, 7);
             k = i - j; 
         }
         
@@ -234,10 +239,10 @@ void loop() {
         i = now.minute() % 10;
         
         if(i <= 6) {
-            j = random(0, i);
+            j = random(0, i + 1);
             k = i - j;
         } else {
-            j = random(6 - i, 6);
+            j = random(i - 6, 7);
             k = i - j; 
         }
         
@@ -245,12 +250,17 @@ void loop() {
         min2 = BottomLookup[k];
         
         // output display
-        FastShiftOut(min2);
         FastShiftOut(min1);
-        FastShiftOut(tenmin2);
+        FastShiftOut(min2);
         FastShiftOut(tenmin1);
-        FastShiftOut(hours2);
+        FastShiftOut(tenmin2);
         FastShiftOut(hours1);
+        FastShiftOut(hours2);
+        digitalWrite(3, HIGH);
+        delay(1);
+        digitalWrite(3, LOW);
+    } else if (now.second() == 59) {
+        runFlag = 1;   
     }
 }
 
